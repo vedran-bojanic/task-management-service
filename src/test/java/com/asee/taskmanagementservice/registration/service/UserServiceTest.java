@@ -35,8 +35,8 @@ class UserServiceTest {
         userDTO = new UserDTO("username", "username@test.hr", "password");
         userEntity = UserEntity.builder()
             .id(1)
-            .username(userDTO.getUsername())
-            .email(userDTO.getEmail())
+            .username(userDTO.username())
+            .email(userDTO.email())
             .password("encodedPassword")
             .build();
     }
@@ -45,7 +45,7 @@ class UserServiceTest {
     @Description("Test map request to user entity and return user")
     void should_saveUser_when_registerUserIsCalled() {
         // prepare data
-        when(passwordEncoder.encode(userDTO.getPassword())).thenReturn("encodedPassword");
+        when(passwordEncoder.encode(userDTO.password())).thenReturn("encodedPassword");
         when(userRepository.save(any())).thenReturn(userEntity);
 
         // call service
