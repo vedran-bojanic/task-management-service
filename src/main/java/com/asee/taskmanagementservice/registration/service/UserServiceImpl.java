@@ -16,12 +16,12 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-    public Integer register(UserDTO request) {
-        log.info("register request: {}", request);
+    public Integer register(UserDTO userRequest) {
+        log.info("register request: {}", userRequest);
         var user = UserEntity.builder()
-            .username(request.getUsername())
-            .email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword()))
+            .username(userRequest.username())
+            .email(userRequest.email())
+            .password(passwordEncoder.encode(userRequest.password()))
             .build();
         return userRepository.save(user).getId();
     }

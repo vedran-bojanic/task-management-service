@@ -1,18 +1,3 @@
 package com.asee.taskmanagementservice.registration.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserDTO {
-
-    private String username;
-    private String email;
-    private String password;
-
-}
+public record UserDTO(String username, String email, String password) {}
