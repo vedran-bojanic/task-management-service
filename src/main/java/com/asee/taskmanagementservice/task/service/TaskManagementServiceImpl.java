@@ -48,12 +48,14 @@ public class TaskManagementServiceImpl implements TaskManagementService {
 
     private TaskDTO toDTO(TaskEntity taskEntity) {
         return new TaskDTO(
+            taskEntity.getId(),
             taskEntity.getName(),
             taskEntity.getDescription(),
             taskEntity.getStatus().toString(),
             mapToString(taskEntity.getCreatedOn()),
             mapToString(taskEntity.getDueDate()),
-            taskEntity.getUser() != null ? taskEntity.getUser().getId() : null
+            taskEntity.getUser() != null ? taskEntity.getUser().getId() : null,
+            taskEntity.getUser() != null ? taskEntity.getUser().getUsername() : null
         );
     }
 
