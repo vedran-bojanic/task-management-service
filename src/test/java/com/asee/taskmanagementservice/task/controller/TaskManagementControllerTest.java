@@ -1,5 +1,6 @@
 package com.asee.taskmanagementservice.task.controller;
 
+import static org.instancio.Select.field;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,8 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.service.TaskManagementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
 import org.hamcrest.Matchers;
+import org.instancio.Instancio;
+import org.instancio.junit.InstancioExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ExtendWith(InstancioExtension.class)
 class TaskManagementControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -31,17 +38,14 @@ class TaskManagementControllerTest {
     @Test
     void should_returnStatusOK_when_creatingTask() throws Exception {
         // prepare data
-        TaskDTO taskDTO = new TaskDTO(
-            1,
-            "name",
-            "description",
-            "CREATED",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            1,
-            "testUser");
+        TaskDTO taskDTO = Instancio.of(TaskDTO.class)
+            .set(field(TaskDTO::userId), 1)
+            .set(field(TaskDTO::status), "CREATED")
+            .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .create();
 
-        // Mock the service response
+        // Mock behavior
         when(taskManagementService.create(taskDTO)).thenReturn(taskDTO);
 
         // call endpoint
@@ -63,17 +67,14 @@ class TaskManagementControllerTest {
     @Test
     void should_returnNotFound_when_fetchingTaskById() throws Exception {
         // prepare data
-        TaskDTO taskDTO = new TaskDTO(
-            1,
-            "name",
-            "description",
-            "CREATED",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            null,
-            null);
+        TaskDTO taskDTO = Instancio.of(TaskDTO.class)
+            .set(field(TaskDTO::userId), 1)
+            .set(field(TaskDTO::status), "CREATED")
+            .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .create();
 
-        // Mock the service response
+        /// Mock behavior
         when(taskManagementService.getTaskById(taskDTO.id())).thenReturn(null);
 
         // call endpoint
@@ -84,18 +85,17 @@ class TaskManagementControllerTest {
     @Test
     void should_returnTaskDTO_when_fetchingTaskById() throws Exception {
         // prepare data
-        TaskDTO taskDTO = new TaskDTO(
-            1,
-            "name",
-            "description",
-            "CREATED",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
-            null,
-            null);
+        TaskDTO taskDTO = Instancio.of(TaskDTO.class)
+            .set(field(TaskDTO::userId), 1)
+            .set(field(TaskDTO::status), "CREATED")
+            .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+            .set(field(TaskDTO::userId), null)
+            .set(field(TaskDTO::username), null)
+            .create();
 
-        // Mock the service response
-        when(taskManagementService.getTaskById(1)).thenReturn(taskDTO);
+        // Mock behavior
+        when(taskManagementService.getTaskById(taskDTO.id())).thenReturn(taskDTO);
 
         // call endpoint
         mockMvc.perform(get("/tasks/" + taskDTO.id()).contentType(MediaType.APPLICATION_JSON))
@@ -106,5 +106,68 @@ class TaskManagementControllerTest {
             .andExpect(jsonPath("$.status", Matchers.is(taskDTO.status())))
             .andExpect(jsonPath("$.createdOn", Matchers.is(taskDTO.createdOn())))
             .andExpect(jsonPath("$.dueDate", Matchers.is(taskDTO.dueDate())));
+    }
+
+    @Test
+    void should_returnTasks_when_fetchingByUserId() throws Exception {
+        // prepare data
+        List<TaskDTO> tasks = Instancio.ofList(TaskDTO.class).size(3).create();
+        int userId = 1;
+
+        // Mock behavior
+        when(taskManagementService.getTasksByUserId(userId)).thenReturn(tasks);
+
+        // call endpoint
+        mockMvc.perform(get("/tasks")
+                .param("userId", String.valueOf(userId))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", Matchers.hasSize(3)))
+            .andExpect(jsonPath("$[0].name", Matchers.is(tasks.get(0).name())))
+            .andExpect(jsonPath("$[1].name", Matchers.is(tasks.get(1).name())))
+            .andExpect(jsonPath("$[2].name", Matchers.is(tasks.get(2).name())));
+    }
+
+    @Test
+    void should_returnNotFound_when_noTasksForUserId() throws Exception {
+        // prepare data
+        int userId = 1;
+
+        // Mock behavior
+        when(taskManagementService.getTasksByUserId(userId)).thenReturn(Collections.emptyList());
+
+        // call endpoint
+        mockMvc.perform(get("/tasks")
+                .param("userId", String.valueOf(userId))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_returnNotFound_when_noTasksWithoutUserId() throws Exception {
+        // Mock behavior
+        when(taskManagementService.getTasksByUserId(null)).thenReturn(Collections.emptyList());
+
+        // call endpoint
+        mockMvc.perform(get("/tasks")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_returnTasks_when_noUserIdProvided() throws Exception {
+        // prepare data
+        List<TaskDTO> tasks = Instancio.ofList(TaskDTO.class).size(2).create();
+
+        // Mock behavior
+        when(taskManagementService.getTasksByUserId(null)).thenReturn(tasks);
+
+        // call endpoint
+        mockMvc.perform(get("/tasks")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", Matchers.hasSize(2)))
+            .andExpect(jsonPath("$[0].name", Matchers.is(tasks.get(0).name())))
+            .andExpect(jsonPath("$[1].name", Matchers.is(tasks.get(1).name())));
     }
 }
