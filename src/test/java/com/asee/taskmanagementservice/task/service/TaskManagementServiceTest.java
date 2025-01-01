@@ -33,11 +33,13 @@ class TaskManagementServiceTest {
     void should_createTask_when_noErrorOccur() {
         // prepare data
         TaskDTO taskDTO = new TaskDTO(
+            null,
             "name",
             "description",
             "CREATED",
             "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
             "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+            null,
             null);
         TaskEntity taskEntity = new TaskEntity();
         taskEntity.setId(1);

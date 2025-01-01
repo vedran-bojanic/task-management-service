@@ -25,11 +25,13 @@ class TaskManagementControllerTest {
     ) throws Exception {
         // prepare data
         TaskDTO taskDTO = new TaskDTO(
+            null,
             "name",
             "description",
             "CREATED",
             "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
             "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+            null,
             null);
 
         // call endpoint
