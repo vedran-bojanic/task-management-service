@@ -2,6 +2,7 @@ package com.asee.taskmanagementservice.task.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
@@ -10,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import com.asee.taskmanagementservice.registration.model.UserEntity;
 import com.asee.taskmanagementservice.registration.repository.UserRepository;
+import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
+import com.asee.taskmanagementservice.task.exception.UserNotFoundException;
 import com.asee.taskmanagementservice.task.model.Status;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.model.TaskEntity;
@@ -26,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Description;
 
 @SpringBootTest
 @ExtendWith(InstancioExtension.class)
@@ -43,7 +45,6 @@ class TaskManagementServiceTest {
     @Nested
     class createTask {
         @Test
-        @Description("Test a Task creation flow with available user")
         void should_createTask_when_onSuccessSave() {
             // prepare data
             UserEntity userEntity = Instancio.of(UserEntity.class).create();
@@ -84,7 +85,6 @@ class TaskManagementServiceTest {
         }
 
         @Test
-        @Description("Test a Task creation flow without available user")
         void should_fetchTask_when_onSuccess() {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
@@ -127,7 +127,6 @@ class TaskManagementServiceTest {
     @Nested
     class getTaskById {
         @Test
-        @Description("Test fetch a task by id when task exist")
         void should_returnTaskDTO_when_taskFound() {
             // prepare data
             UserEntity userEntity = Instancio.of(UserEntity.class).create();
@@ -161,12 +160,11 @@ class TaskManagementServiceTest {
         }
 
         @Test
-        @Description("Test fetch a task by id when task doesn't exist")
         void should_returnNull_when_taskNotFound() {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
                 .set(field(TaskDTO::userId), 1)
-                    .create();
+                .create();
 
             /// Mock behavior
             when(taskManagementRepository.findById(taskDTO.id())).thenReturn(Optional.empty());
@@ -182,7 +180,6 @@ class TaskManagementServiceTest {
     @Nested
     class getTasksByUserId {
         @Test
-        @Description("Test for fetching all tasks with userId as null")
         void should_fetchAllTask_when_noUserIdSpecified() {
             // prepare data
             Integer userId = null;
@@ -202,7 +199,6 @@ class TaskManagementServiceTest {
         }
 
         @Test
-        @Description("Test for fetching all tasks with userId specified in the call")
         void should_returnTasks_when_userIdProvided() {
             // prepare data
             Integer userId = 1;
@@ -222,7 +218,6 @@ class TaskManagementServiceTest {
         }
 
         @Test
-        @Description("Test for fetching all tasks when no task exist")
         void should_returnEmptyList_when_noTasksExist() {
             // prepare data
             Integer userId = null;
@@ -230,7 +225,7 @@ class TaskManagementServiceTest {
             // Mock behavior
             when(taskManagementRepository.findAll()).thenReturn(Collections.emptyList());
 
-            /// call service
+            // call service
             List<TaskDTO> actualTasks = taskManagementService.getTasksByUserId(userId);
 
             // assert and verify
@@ -240,4 +235,85 @@ class TaskManagementServiceTest {
         }
     }
 
+    @Nested
+    class updateTaskById {
+        @Test
+        void should_returnUpdatedTaskDTO_when_taskFoundAndUpdated() {
+            // prepare data
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class)
+                .set(field(TaskEntity::getStatus), Status.CREATED)
+                .create();
+            UserEntity userToUpdate = Instancio.of(UserEntity.class)
+                .set(field(UserEntity::getId), 1)
+                .set(field(UserEntity::getUsername), "username")
+                .create();
+            TaskDTO taskDTOToUpdate = new TaskDTO(
+                existingTaskEntity.getId(),
+                "Updated name",
+                "Updated description",
+                "OPEN",
+                "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+                "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+                userToUpdate.getId(),
+                userToUpdate.getUsername());
+
+            // Prepare expected updated task entity
+            TaskEntity updatedTaskEntity = Instancio.of(TaskEntity.class)
+                .set(field(TaskEntity::getName), taskDTOToUpdate.name())
+                .set(field(TaskEntity::getDescription), taskDTOToUpdate.description())
+                .set(field(TaskEntity::getStatus), Status.OPEN)
+                .set(field(TaskEntity::getUser), userToUpdate)
+                .create();
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenReturn(Optional.of(existingTaskEntity));
+            when(userRepository.findById(anyInt())).thenReturn(Optional.of(userToUpdate));
+            when(taskManagementRepository.save(any(TaskEntity.class))).thenReturn(updatedTaskEntity);
+
+            // call service
+            TaskDTO result = taskManagementService.updateTaskById(existingTaskEntity.getId(), taskDTOToUpdate);
+
+            // assert and verify
+            assertThat(result).isNotNull();
+            assertThat(taskDTOToUpdate.name()).isEqualTo(result.name());
+            assertThat(taskDTOToUpdate.description()).isEqualTo(result.description());
+            assertThat(taskDTOToUpdate.status()).isEqualTo(result.status());
+            assertThat(taskDTOToUpdate.userId()).isEqualTo(result.userId());
+            assertThat(taskDTOToUpdate.username()).isEqualTo(result.username());
+        }
+
+        @Test
+        void should_throwTaskNotFoundException_when_taskNotFound() {
+            // prepare data
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class).create();
+            TaskDTO taskDTOToUpdate = Instancio.of(TaskDTO.class).create();
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenThrow(new TaskNotFoundException("Task not found"));
+
+            assertThrows(TaskNotFoundException.class, () -> taskManagementService.updateTaskById(existingTaskEntity.getId(), taskDTOToUpdate));
+        }
+
+        @Test
+        void should_throwUserNotFoundException_when_userNotFound() {
+            // prepare data
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class).create();
+            TaskDTO taskDTOToUpdate = new TaskDTO(
+                existingTaskEntity.getId(),
+                "Updated name",
+                "Updated description",
+                "OPEN",
+                "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+                "2024-12-31T10:00:00+01:00[Europe/Zagreb]",
+                1,
+                null);
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenReturn(Optional.of(existingTaskEntity));
+            when(userRepository.findById(anyInt())).thenThrow(new UserNotFoundException("User not found"));
+
+            assertThrows(UserNotFoundException.class, () -> taskManagementService.updateTaskById(existingTaskEntity.getId(), taskDTOToUpdate));
+        }
+
+    }
 }
