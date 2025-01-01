@@ -9,6 +9,7 @@ import com.asee.taskmanagementservice.task.repository.TaskManagementRepository;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,23 @@ public class TaskManagementServiceImpl implements TaskManagementService {
             return toDTO(task);
         }
         return null;
+    }
+
+    @Override
+    public List<TaskDTO> getTasksByUserId(Integer userId) {
+        if (userId != null) {
+            // Fetch tasks by userId
+            return taskManagementRepository.findByUserId(userId)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+        } else {
+            // Fetch all tasks
+            return taskManagementRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .toList();
+        }
     }
 
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
