@@ -3,12 +3,14 @@ package com.asee.taskmanagementservice.task.controller;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.service.TaskManagementService;
 import java.util.List;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +24,7 @@ public class TaskManagementController {
     private final TaskManagementService taskManagementService;
 
     @PostMapping
-    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskRequest) {
+    public ResponseEntity<TaskDTO> createTask(@RequestBody @Valid TaskDTO taskRequest) {
         var task = taskManagementService.create(taskRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(task);
     }
@@ -45,4 +47,9 @@ public class TaskManagementController {
         return ResponseEntity.ok(tasks);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<TaskDTO> updateTask(@PathVariable Integer id, @RequestBody @Valid TaskDTO taskRequest) {
+        var updatedTask = taskManagementService.updateTaskById(id, taskRequest);
+        return ResponseEntity.ok(updatedTask);
+    }
 }

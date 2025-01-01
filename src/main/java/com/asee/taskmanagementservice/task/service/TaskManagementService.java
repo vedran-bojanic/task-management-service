@@ -7,4 +7,5 @@ public interface TaskManagementService {
     TaskDTO create(TaskDTO task);
     TaskDTO getTaskById(Integer id);
     List<TaskDTO> getTasksByUserId(Integer userId);
+    TaskDTO updateTaskById(Integer id, TaskDTO task);
 }

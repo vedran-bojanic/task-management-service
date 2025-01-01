@@ -2,6 +2,8 @@ package com.asee.taskmanagementservice.task.service;
 
 import com.asee.taskmanagementservice.registration.model.UserEntity;
 import com.asee.taskmanagementservice.registration.repository.UserRepository;
+import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
+import com.asee.taskmanagementservice.task.exception.UserNotFoundException;
 import com.asee.taskmanagementservice.task.model.Status;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.model.TaskEntity;
@@ -40,7 +42,7 @@ public class TaskManagementServiceImpl implements TaskManagementService {
     public TaskDTO getTaskById(Integer id) {
         log.info("Fetch task with a task id: {}", id);
         var optionalTaskEntity = taskManagementRepository.findById(id);
-        if (optionalTaskEntity.isPresent()) {
+        if (optionalTaskEntity.isPresent()) { // check the task is present
             var task = optionalTaskEntity.get();
             return toDTO(task);
         }
@@ -62,6 +64,32 @@ public class TaskManagementServiceImpl implements TaskManagementService {
                 .map(this::toDTO)
                 .toList();
         }
+    }
+
+    @Override
+    public TaskDTO updateTaskById(Integer taskId, TaskDTO task) {
+        log.info("Update task with a task id: {}", taskId);
+
+        // Fetch if the task exist
+        TaskEntity taskEntity = taskManagementRepository.findById(taskId)
+            .orElseThrow(() -> new TaskNotFoundException("Task not found with ID: " + taskId));
+
+        // Update fields
+        taskEntity.setName(task.name());
+        taskEntity.setDescription(task.description());
+        taskEntity.setStatus(Status.fromString(task.status()));
+        taskEntity.setDueDate(mapToZonedDateTime(task.dueDate()));
+
+        if (task.userId() != null) {
+            // Validate userId and set the UserEntity
+            UserEntity user = userRepository.findById(task.userId())
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + task.userId()));
+            taskEntity.setUser(user);
+        }
+
+        // Save and map the updated entity
+        TaskEntity updatedTask = taskManagementRepository.save(taskEntity);
+        return toDTO(updatedTask);
     }
 
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
@@ -90,7 +118,7 @@ public class TaskManagementServiceImpl implements TaskManagementService {
 
     private ZonedDateTime mapToZonedDateTime(String dateTimeString) {
         try {
-            return ZonedDateTime.parse(dateTimeString); // ISO 8601 format
+            return ZonedDateTime.parse(dateTimeString);
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Invalid date-time format: " + dateTimeString, e);
         }
