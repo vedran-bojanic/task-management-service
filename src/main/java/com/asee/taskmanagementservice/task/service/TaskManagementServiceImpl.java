@@ -35,6 +35,17 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         return toDTO(savedTask);
     }
 
+    @Override
+    public TaskDTO getTaskById(Integer id) {
+        log.info("Fetch task with a task id: {}", id);
+        var optionalTaskEntity = taskManagementRepository.findById(id);
+        if (optionalTaskEntity.isPresent()) {
+            var task = optionalTaskEntity.get();
+            return toDTO(task);
+        }
+        return null;
+    }
+
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
         return TaskEntity.builder()
             .name(taskDTO.name())

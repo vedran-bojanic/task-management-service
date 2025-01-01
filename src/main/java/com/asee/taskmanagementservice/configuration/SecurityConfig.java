@@ -24,10 +24,12 @@ public class SecurityConfig {
             .cors(AbstractHttpConfigurer::disable)
             .headers(httpSecurityHeadersConfigurer -> httpSecurityHeadersConfigurer.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .authorizeHttpRequests(requests -> requests
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/health").permitAll()
-                .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/tasks**").permitAll());
+                .requestMatchers(
+                    "/h2-console/**",
+                    "/health",
+                    "/users/register",
+                    "/tasks/**"
+                ).permitAll());
         return http.build();
     }
 
