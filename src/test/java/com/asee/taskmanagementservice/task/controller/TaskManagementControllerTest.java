@@ -331,7 +331,7 @@ class TaskManagementControllerTest {
 
             // Call endpoint
             mockMvc.perform(delete("/tasks/{id}", taskId))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
             // Verify
             verify(taskManagementService, times(1)).deleteTaskById(taskId);

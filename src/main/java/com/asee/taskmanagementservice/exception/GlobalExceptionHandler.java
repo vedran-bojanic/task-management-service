@@ -1,5 +1,9 @@
-package com.asee.taskmanagementservice.task.exception;
+package com.asee.taskmanagementservice.exception;
 
+import com.asee.taskmanagementservice.registration.exception.UserAlreadyExistException;
+import com.asee.taskmanagementservice.task.exception.InvalidStatusException;
+import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
+import com.asee.taskmanagementservice.task.exception.UserNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -32,5 +36,10 @@ public class GlobalExceptionHandler {
         response.put("error", "Missing required parameter: " + ex.getParameterName());
         response.put("message", "The parameter " + ex.getParameterName() + " is required but not provided.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(UserAlreadyExistException.class)
+    public ResponseEntity<String> handleUserAlreadyExistsException(UserAlreadyExistException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

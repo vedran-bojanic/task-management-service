@@ -92,13 +92,13 @@ public class TaskManagementController {
 
     @Operation(summary = "Delete a task by user id", description = "Delete a task by user id")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Successfully deleted the tasks"),
+        @ApiResponse(responseCode = "200", description = "Successfully deleted the tasks"),
         @ApiResponse(responseCode = "404", description = "No task found"),
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<TaskDTO> deleteTaskById(@PathVariable Integer id) {
+    public ResponseEntity<String> deleteTaskById(@PathVariable Integer id) {
         taskManagementService.deleteTaskById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Successfully deleted the tasks with id: " + id);
     }
 
     @PostMapping("/{taskId}/assign")
