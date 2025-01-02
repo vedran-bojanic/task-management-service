@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.asee.taskmanagementservice.registration.model.UserEntity;
 import com.asee.taskmanagementservice.registration.repository.UserRepository;
+import com.asee.taskmanagementservice.task.exception.InvalidStatusException;
 import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
 import com.asee.taskmanagementservice.task.exception.UserNotFoundException;
 import com.asee.taskmanagementservice.task.model.Status;
@@ -180,11 +181,10 @@ class TaskManagementServiceTest {
         void should_fetchAllTask_when_noUserIdSpecified() {
             // prepare data
             Integer userId = null;
-            TaskEntity taskDTO1 = Instancio.of(TaskEntity.class).create();
-            TaskEntity taskDTO2 = Instancio.of(TaskEntity.class).create();
+            List<TaskEntity> tasks = Instancio.ofList(TaskEntity.class).size(2).create();
 
             // Mock behavior
-            when(taskManagementRepository.findAll()).thenReturn(List.of(taskDTO1, taskDTO2));
+            when(taskManagementRepository.findAll()).thenReturn(tasks);
 
             // call service
             var task = taskManagementService.getTasksByUserId(userId);
@@ -199,11 +199,10 @@ class TaskManagementServiceTest {
         void should_returnTasks_when_userIdProvided() {
             // prepare data
             Integer userId = 1;
-            TaskEntity taskDTO1 = Instancio.of(TaskEntity.class).create();
-            TaskEntity taskDTO2 = Instancio.of(TaskEntity.class).create();
+            List<TaskEntity> tasks = Instancio.ofList(TaskEntity.class).size(2).create();
 
             // Mock behavior
-            when(taskManagementRepository.findByUserId(userId)).thenReturn(List.of(taskDTO1, taskDTO2));
+            when(taskManagementRepository.findByUserId(userId)).thenReturn(tasks);
 
             // call service
             List<TaskDTO> actualTasks = taskManagementService.getTasksByUserId(userId);
@@ -229,6 +228,54 @@ class TaskManagementServiceTest {
             assertThat(actualTasks).isEmpty();
             verify(taskManagementRepository, times(0)).findByUserId(userId);
             verify(taskManagementRepository, times(1)).findAll();
+        }
+    }
+
+    @Nested
+    class GetTasksByStatus {
+        @Test
+        void should_returnTasks_when_statusProvided() {
+            // prepare data
+            String status = "CREATED";
+            Status statusEnum = Status.CREATED;
+            List<TaskEntity> tasks = Instancio.ofList(TaskEntity.class).size(2).create();
+
+            // Mock behavior
+            when(taskManagementRepository.findTaskEntityByStatus(statusEnum)).thenReturn(tasks);
+
+            // call service
+            List<TaskDTO> actualTasks = taskManagementService.getTasksByStatus(status);
+
+            // assert and verify
+            assertThat(actualTasks).hasSize(2);
+            verify(taskManagementRepository, times(1)).findTaskEntityByStatus(statusEnum);
+        }
+
+        @Test
+        void should_returnEmpty_when_noTaskWithStatusProvided() {
+            // prepare data
+            String status = "CREATED";
+            Status statusEnum = Status.CREATED;
+            List<TaskEntity> tasks = Instancio.ofList(TaskEntity.class).size(0).create();
+
+            // Mock behavior
+            when(taskManagementRepository.findTaskEntityByStatus(statusEnum)).thenReturn(tasks);
+
+            // call service
+            List<TaskDTO> actualTasks = taskManagementService.getTasksByStatus(status);
+
+            // assert and verify
+            assertThat(actualTasks).isEmpty();
+            verify(taskManagementRepository, times(1)).findTaskEntityByStatus(statusEnum);
+        }
+
+        @Test
+        void should_returnInvalidStatusException_when_invalidStatusProvided() {
+            // prepare data
+            String status = "XXXX";
+
+            // assert throws
+            assertThrows(InvalidStatusException.class, () -> taskManagementService.getTasksByStatus(status));
         }
     }
 
