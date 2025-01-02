@@ -53,6 +53,11 @@ No custom configuration needed.
 
 **H2 DB** will automatically start as an in-memory DB.
 
+### H2 DB
+
+Application database is available only when the application is up and running.
+H2 console is enabled and can be reached on this link: [H2 DB Console](http://localhost:8080/h2-console)
+
 ### OpenAPI - endpoints
 
 When the application is started, swagger is available on this link: [OpenAPI](http://localhost:8080/swagger-ui/index.html)
