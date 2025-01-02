@@ -52,7 +52,7 @@ class TaskManagementServiceTest {
             // prepare data
             UserEntity userEntity = Instancio.of(UserEntity.class).create();
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -91,7 +91,7 @@ class TaskManagementServiceTest {
         void should_fetchTask_when_onSuccess() {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -134,7 +134,7 @@ class TaskManagementServiceTest {
             // prepare data
             UserEntity userEntity = Instancio.of(UserEntity.class).create();
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -344,7 +344,7 @@ class TaskManagementServiceTest {
             // prepare data
             Integer userId = 1;
             TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class)
-                .set(field(UserEntity::getId), userId)
+                .set(field(TaskEntity::getId), userId)
                 .create();
             TaskDTO taskDTOToUpdate = new TaskDTO(
                 userId,
@@ -395,6 +395,65 @@ class TaskManagementServiceTest {
             assertThrows(TaskNotFoundException.class, () -> taskManagementService.deleteTaskById(taskId));
             verify(taskManagementRepository, times(1)).existsById(taskId);
             verify(taskManagementRepository, never()).deleteById(any());
+        }
+    }
+
+    @Nested
+    class AssignTask {
+        @Test
+        void should_assignTaskById_when_taskAndUserExist() {
+            // prepare data
+            Integer userId = 1;
+            Integer taskId = 1;
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class)
+                .set(field(TaskEntity::getId), taskId)
+                .create();
+            UserEntity existingUserEntity = Instancio.of(UserEntity.class)
+                .set(field(UserEntity::getId), userId)
+                .create();
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenReturn(Optional.of(existingTaskEntity));
+            when(userRepository.findById(anyInt())).thenReturn(Optional.of(existingUserEntity));
+            when(taskManagementRepository.save(any())).thenReturn(existingTaskEntity);
+
+            // call service
+            TaskDTO result = taskManagementService.assignTaskByUserId(taskId, userId);
+
+            // assert
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(taskId);
+            assertThat(result.userId()).isEqualTo(userId);
+        }
+
+        @Test
+        void should_throwTaskNotFoundException_when_taskNotFound() {
+            // prepare data
+            Integer userId = 1;
+            Integer taskId = 1;
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenThrow(new TaskNotFoundException("Task not found with ID: " + taskId));
+
+            // assert throws
+            assertThrows(TaskNotFoundException.class, () -> taskManagementService.assignTaskByUserId(taskId, userId));
+        }
+
+        @Test
+        void should_throwUserNotFoundException_when_userNotFound() {
+            // prepare data
+            Integer userId = 1;
+            Integer taskId = 1;
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class)
+                .set(field(TaskEntity::getId), userId)
+                .create();
+
+            // Mock behavior
+            when(taskManagementRepository.findById(anyInt())).thenReturn(Optional.of(existingTaskEntity));
+            when(userRepository.findById(anyInt())).thenThrow(new UserNotFoundException("User not found with ID: " + taskId));
+
+            // assert throws
+            assertThrows(UserNotFoundException.class, () -> taskManagementService.assignTaskByUserId(taskId, userId));
         }
     }
 }

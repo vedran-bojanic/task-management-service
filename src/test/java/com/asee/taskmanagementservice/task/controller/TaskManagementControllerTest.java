@@ -36,6 +36,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,7 +55,7 @@ class TaskManagementControllerTest {
         void should_returnStatusOK_when_creatingTask() throws Exception {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -86,7 +87,7 @@ class TaskManagementControllerTest {
         void should_returnNotFound_when_fetchingTaskById() throws Exception {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -104,7 +105,7 @@ class TaskManagementControllerTest {
         void should_returnTaskDTO_when_fetchingTaskById() throws Exception {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -250,7 +251,7 @@ class TaskManagementControllerTest {
         void should_returnStatusOK_when_updatingTask() throws Exception {
             // prepare data
             TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
+                .set(field(TaskDTO::id), 1)
                 .set(field(TaskDTO::status), "CREATED")
                 .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
                 .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
@@ -321,7 +322,7 @@ class TaskManagementControllerTest {
     @Nested
     class Delete {
         @Test
-        void testDeleteTaskById() throws Exception {
+        void should_deleteTask_when_taskExists() throws Exception {
             // Prepare data
             Integer taskId = 1;
 
@@ -337,7 +338,7 @@ class TaskManagementControllerTest {
         }
 
         @Test
-        void testDeleteTaskNotFound() throws Exception {
+        void should_returnNotFound_when_noTaskExist() throws Exception {
             // Prepare data
             Integer taskId = 99;
 
@@ -348,6 +349,82 @@ class TaskManagementControllerTest {
             // Call endpoint
             mockMvc.perform(delete("/tasks/{id}", taskId))
                 .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    class AssignTask {
+        @Test
+        void should_assignTask_when_TaskAndUserExist() throws Exception {
+            // Prepare data
+            Integer taskId = 1;
+            Integer userId = 2;
+            String username = "username";
+            TaskDTO assignedTask = Instancio.of(TaskDTO.class)
+                .set(field(TaskDTO::id), taskId)
+                .set(field(TaskDTO::status), "CREATED")
+                .set(field(TaskDTO::createdOn), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+                .set(field(TaskDTO::dueDate), "2024-12-31T10:00:00+01:00[Europe/Zagreb]")
+                .set(field(TaskDTO::userId), userId)
+                .set(field(TaskDTO::username), username)
+                .create();
+
+            // Mock behavior
+            when(taskManagementService.assignTaskByUserId(taskId, userId)).thenReturn(assignedTask);
+
+            // Call endpoint
+            mockMvc.perform(post("/tasks/{taskId}/assign", taskId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers
+                    .content()
+                    .string(String.format("Task with ID: %d assigned successfully to the user: %s!", taskId, username)));
+        }
+
+        @Test
+        void should_returnTaskNotFound_when_taskDoesntExist() throws Exception {
+            // Prepare data
+            Integer taskId = 1;
+            Integer userId = 2;
+
+            // Mock behavior
+            when(taskManagementService.assignTaskByUserId(taskId, userId)).thenThrow(new TaskNotFoundException("Task not found with ID: " + taskId));
+
+            // Call endpoint
+            mockMvc.perform(post("/tasks/{taskId}/assign", taskId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(MockMvcResultMatchers
+                    .content()
+                    .string("Task not found with ID: " + taskId));
+        }
+
+        @Test
+        void should_returnUserNotFound_when_userDoesntExist() throws Exception {
+            // Prepare data
+            Integer taskId = 1;
+            Integer userId = 2;
+
+            // Mock behavior
+            when(taskManagementService.assignTaskByUserId(taskId, userId)).thenThrow(new UserNotFoundException("User not found with ID: " + userId));
+
+            // Call endpoint
+            mockMvc.perform(post("/tasks/{taskId}/assign", taskId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(MockMvcResultMatchers
+                    .content()
+                    .string("User not found with ID: " + userId));
+        }
+
+        @Test
+        void should_returnGlobalError_when_userIdNotProvided() throws Exception {
+            // Prepare data
+            Integer taskId = 1;
+
+            // Call endpoint
+            mockMvc.perform(post("/tasks/{taskId}/assign", taskId))
+                .andExpect(status().isBadRequest());
         }
     }
 }
