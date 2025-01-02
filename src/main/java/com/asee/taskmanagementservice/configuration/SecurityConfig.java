@@ -21,14 +21,18 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(AbstractHttpConfigurer::disable)
-            .headers(httpSecurityHeadersConfigurer -> httpSecurityHeadersConfigurer.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers(
-                    "/h2-console/**",
-                    "/health",
-                    "/users/register",
-                    "/tasks/**"
-                ).permitAll());
+                    "/h2-console/**",              // H2 Console
+                    "/swagger-ui/**",              // Swagger UI assets
+                    "/api-docs/swagger-config" ,   // Swagger configuration
+                    "/v3/api-docs/**",             // OpenAPI spec
+                    "/health",                     // Health checks
+                    "/users/register",             // Public registration
+                    "/tasks/**"                    // Public task-related endpoints
+                ).permitAll()
+                .anyRequest().authenticated());    // Secure all other endpoints
         return http.build();
     }
 
