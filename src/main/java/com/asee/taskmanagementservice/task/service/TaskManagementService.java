@@ -10,4 +10,5 @@ public interface TaskManagementService {
     List<TaskDTO> getTasksByStatus(String status);
     TaskDTO updateTaskById(Integer id, TaskDTO task);
     void deleteTaskById(Integer id);
+    TaskDTO assignTaskByUserId(Integer taskId, Integer userId);
 }

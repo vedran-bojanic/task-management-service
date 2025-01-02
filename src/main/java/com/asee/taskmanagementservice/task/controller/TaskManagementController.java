@@ -66,4 +66,10 @@ public class TaskManagementController {
         taskManagementService.deleteTaskById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{taskId}/assign")
+    public ResponseEntity<String> assignTaskByUser(@PathVariable Integer taskId, @RequestParam(value = "userId") Integer userId) {
+        TaskDTO task = taskManagementService.assignTaskByUserId(taskId, userId);
+        return ResponseEntity.ok(String.format("Task with ID: %d assigned successfully to the user: %s!", task.id(), task.username()));
+    }
 }
