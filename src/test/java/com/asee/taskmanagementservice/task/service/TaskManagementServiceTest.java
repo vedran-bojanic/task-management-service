@@ -5,6 +5,8 @@ import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,7 +45,7 @@ class TaskManagementServiceTest {
     private UserRepository userRepository;
 
     @Nested
-    class createTask {
+    class Create {
         @Test
         void should_createTask_when_onSuccessSave() {
             // prepare data
@@ -125,7 +127,7 @@ class TaskManagementServiceTest {
     }
 
     @Nested
-    class getTaskById {
+    class GetTaskById {
         @Test
         void should_returnTaskDTO_when_taskFound() {
             // prepare data
@@ -162,23 +164,18 @@ class TaskManagementServiceTest {
         @Test
         void should_returnNull_when_taskNotFound() {
             // prepare data
-            TaskDTO taskDTO = Instancio.of(TaskDTO.class)
-                .set(field(TaskDTO::userId), 1)
-                .create();
+            Integer taskId = 1;
 
             /// Mock behavior
-            when(taskManagementRepository.findById(taskDTO.id())).thenReturn(Optional.empty());
+            when(taskManagementRepository.findById(taskId)).thenReturn(Optional.empty());
 
-            // call service
-            TaskDTO result = taskManagementService.getTaskById(taskDTO.id());
-
-            // assert
-            assertThat(result).isNull();
+            // assert throws
+            assertThrows(TaskNotFoundException.class, () -> taskManagementService.getTaskById(taskId));
         }
     }
 
     @Nested
-    class getTasksByUserId {
+    class GetTasksByUser {
         @Test
         void should_fetchAllTask_when_noUserIdSpecified() {
             // prepare data
@@ -236,7 +233,7 @@ class TaskManagementServiceTest {
     }
 
     @Nested
-    class updateTaskById {
+    class Update {
         @Test
         void should_returnUpdatedTaskDTO_when_taskFoundAndUpdated() {
             // prepare data
@@ -285,21 +282,25 @@ class TaskManagementServiceTest {
         @Test
         void should_throwTaskNotFoundException_when_taskNotFound() {
             // prepare data
-            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class).create();
+            Integer userId = 1;
             TaskDTO taskDTOToUpdate = Instancio.of(TaskDTO.class).create();
 
             // Mock behavior
             when(taskManagementRepository.findById(anyInt())).thenThrow(new TaskNotFoundException("Task not found"));
 
-            assertThrows(TaskNotFoundException.class, () -> taskManagementService.updateTaskById(existingTaskEntity.getId(), taskDTOToUpdate));
+            // assert throws
+            assertThrows(TaskNotFoundException.class, () -> taskManagementService.updateTaskById(userId, taskDTOToUpdate));
         }
 
         @Test
         void should_throwUserNotFoundException_when_userNotFound() {
             // prepare data
-            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class).create();
+            Integer userId = 1;
+            TaskEntity existingTaskEntity = Instancio.of(TaskEntity.class)
+                .set(field(UserEntity::getId), userId)
+                .create();
             TaskDTO taskDTOToUpdate = new TaskDTO(
-                existingTaskEntity.getId(),
+                userId,
                 "Updated name",
                 "Updated description",
                 "OPEN",
@@ -312,8 +313,41 @@ class TaskManagementServiceTest {
             when(taskManagementRepository.findById(anyInt())).thenReturn(Optional.of(existingTaskEntity));
             when(userRepository.findById(anyInt())).thenThrow(new UserNotFoundException("User not found"));
 
-            assertThrows(UserNotFoundException.class, () -> taskManagementService.updateTaskById(existingTaskEntity.getId(), taskDTOToUpdate));
+            // assert throws
+            assertThrows(UserNotFoundException.class, () -> taskManagementService.updateTaskById(userId, taskDTOToUpdate));
+        }
+    }
+
+    @Nested
+    class Delete {
+        @Test
+        void should_deleteTaskById_when_Success() {
+            // prepare data
+            Integer taskId = 1;
+
+            // Mock behavior
+            when(taskManagementRepository.existsById(taskId)).thenReturn(true);
+            doNothing().when(taskManagementRepository).deleteById(taskId);
+
+            taskManagementService.deleteTaskById(taskId);
+
+            // verify
+            verify(taskManagementRepository, times(1)).existsById(taskId);
+            verify(taskManagementRepository, times(1)).deleteById(taskId);
         }
 
+        @Test
+        void should_throwTaskNotFoundException_when_deleteTaskById() {
+            // prepare data
+            Integer taskId = 99;
+
+            // Mock behavior
+            when(taskManagementRepository.existsById(taskId)).thenReturn(false);
+
+            // assert throws and verify
+            assertThrows(TaskNotFoundException.class, () -> taskManagementService.deleteTaskById(taskId));
+            verify(taskManagementRepository, times(1)).existsById(taskId);
+            verify(taskManagementRepository, never()).deleteById(any());
+        }
     }
 }

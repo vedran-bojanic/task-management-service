@@ -1,5 +1,6 @@
 package com.asee.taskmanagementservice.task.controller;
 
+import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.service.TaskManagementService;
 import java.util.List;
@@ -33,9 +34,6 @@ public class TaskManagementController {
     @GetMapping("/{id}")
     public ResponseEntity<TaskDTO> getTaskById(@PathVariable Integer id) {
         var fetchedTask = taskManagementService.getTaskById(id);
-        if (fetchedTask == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(fetchedTask);
     }
 
@@ -43,7 +41,7 @@ public class TaskManagementController {
     public ResponseEntity<List<TaskDTO>> getTasks(@RequestParam(value = "userId", required = false) Integer userId) {
         List<TaskDTO> tasks = taskManagementService.getTasksByUserId(userId);
         if (tasks == null || tasks.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            throw new TaskNotFoundException("No tasks found");
         }
         return ResponseEntity.ok(tasks);
     }

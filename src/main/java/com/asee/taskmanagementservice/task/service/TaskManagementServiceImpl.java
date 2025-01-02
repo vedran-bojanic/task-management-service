@@ -46,7 +46,7 @@ public class TaskManagementServiceImpl implements TaskManagementService {
             var task = optionalTaskEntity.get();
             return toDTO(task);
         }
-        return null;
+        throw new TaskNotFoundException("Task not found with ID: " + id);
     }
 
     @Override
