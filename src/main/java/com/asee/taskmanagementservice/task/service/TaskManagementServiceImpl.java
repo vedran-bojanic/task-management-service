@@ -112,6 +112,20 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         taskManagementRepository.deleteById(id);
     }
 
+    @Override
+    public TaskDTO assignTaskByUserId(Integer taskId, Integer userId) {
+        log.info("Assign task with a task id: {}", taskId);
+
+        TaskEntity task = taskManagementRepository.findById(taskId)
+            .orElseThrow(() -> new TaskNotFoundException("Task not found with ID: " + taskId));
+
+        UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        task.setUser(user); // assign new user and save
+        return toDTO(taskManagementRepository.save(task));
+    }
+
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
         return TaskEntity.builder()
             .name(taskDTO.name())
