@@ -1,5 +1,6 @@
 package com.asee.taskmanagementservice.registration.service;
 
+import com.asee.taskmanagementservice.registration.exception.UserAlreadyExistException;
 import com.asee.taskmanagementservice.registration.model.UserDTO;
 import com.asee.taskmanagementservice.registration.model.UserEntity;
 import com.asee.taskmanagementservice.registration.repository.UserRepository;
@@ -23,7 +24,13 @@ public class UserServiceImpl implements UserService {
             .email(userRequest.email())
             .password(passwordEncoder.encode(userRequest.password()))
             .build();
-        return userRepository.save(user).getId();
+
+        // User has to have uniqe username and email
+        if (userRepository.existsByUsernameOrEmail(userRequest.username(), userRequest.email())) {
+            throw new UserAlreadyExistException("Username or email already taken!");
+        } else {
+            return userRepository.save(user).getId();
+        }
     }
 
 }
