@@ -92,6 +92,18 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         return toDTO(updatedTask);
     }
 
+    @Override
+    public void deleteTaskById(Integer id) {
+        log.info("Delete task with a task id: {}", id);
+
+        if (!taskManagementRepository.existsById(id)) {
+            log.warn("Task with ID {} does not exist.", id);
+            throw new TaskNotFoundException("Task with ID " + id + " not found.");
+        }
+
+        taskManagementRepository.deleteById(id);
+    }
+
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
         return TaskEntity.builder()
             .name(taskDTO.name())
