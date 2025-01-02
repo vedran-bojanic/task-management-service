@@ -3,6 +3,7 @@ package com.asee.taskmanagementservice.task.controller;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -14,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.asee.taskmanagementservice.task.exception.InvalidStatusException;
 import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
 import com.asee.taskmanagementservice.task.exception.UserNotFoundException;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
@@ -188,6 +190,57 @@ class TaskManagementControllerTest {
                 .andExpect(jsonPath("$", Matchers.hasSize(2)))
                 .andExpect(jsonPath("$[0].name", Matchers.is(tasks.get(0).name())))
                 .andExpect(jsonPath("$[1].name", Matchers.is(tasks.get(1).name())));
+        }
+    }
+
+    @Nested
+    class GetTasksByStatus {
+        @Test
+        void should_returnTasks_when_fetchingByStatus() throws Exception {
+            // prepare data
+            String status = "CREATED";
+            List<TaskDTO> tasks = Instancio.ofList(TaskDTO.class).size(2).create();
+
+            // Mock behavior
+            when(taskManagementService.getTasksByStatus(anyString())).thenReturn(tasks);
+
+            // call endpoint
+            mockMvc.perform(get("/tasks/status/" + status)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(jsonPath("$[0].name", Matchers.is(tasks.get(0).name())))
+                .andExpect(jsonPath("$[1].name", Matchers.is(tasks.get(1).name())));
+        }
+
+        @Test
+        void should_returnNotFound_when_noTasksForStatus() throws Exception {
+            // prepare data
+            String status = "CREATED";
+            List<TaskDTO> tasks = Instancio.ofList(TaskDTO.class).size(0).create();
+
+            // Mock behavior
+            when(taskManagementService.getTasksByStatus(anyString())).thenReturn(tasks);
+
+            // call endpoint
+            mockMvc.perform(get("/tasks/status/" + status)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void should_returnBadRequest_when_invalidStatus() throws Exception {
+            // prepare data
+            String status = "XXXXX";
+
+            // Mock behavior
+            when(taskManagementService.getTasksByStatus(anyString()))
+                .thenThrow(new InvalidStatusException("Invalid status value: " + status));
+
+            // call endpoint
+            mockMvc.perform(get("/tasks/status/" + status)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
         }
     }
 

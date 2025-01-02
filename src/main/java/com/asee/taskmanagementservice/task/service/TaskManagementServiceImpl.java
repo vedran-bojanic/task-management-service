@@ -67,6 +67,14 @@ public class TaskManagementServiceImpl implements TaskManagementService {
     }
 
     @Override
+    public List<TaskDTO> getTasksByStatus(String status) {
+        return taskManagementRepository.findTaskEntityByStatus(Status.fromString(status))
+            .stream()
+            .map(this::toDTO)
+            .toList();
+    }
+
+    @Override
     public TaskDTO updateTaskById(Integer taskId, TaskDTO task) {
         log.info("Update task with a task id: {}", taskId);
 

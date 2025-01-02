@@ -46,6 +46,15 @@ public class TaskManagementController {
         return ResponseEntity.ok(tasks);
     }
 
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<TaskDTO>> getTasksByStatus(@PathVariable String status) {
+        List<TaskDTO> tasks = taskManagementService.getTasksByStatus(status);
+        if (tasks == null || tasks.isEmpty()) {
+            throw new TaskNotFoundException("No tasks found for status: " + status);
+        }
+        return ResponseEntity.ok(tasks);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<TaskDTO> updateTask(@PathVariable Integer id, @RequestBody @Valid TaskDTO taskRequest) {
         var updatedTask = taskManagementService.updateTaskById(id, taskRequest);
