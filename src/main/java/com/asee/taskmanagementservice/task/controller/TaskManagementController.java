@@ -1,5 +1,6 @@
 package com.asee.taskmanagementservice.task.controller;
 
+import com.asee.taskmanagementservice.task.exception.TaskNotFoundException;
 import com.asee.taskmanagementservice.task.model.TaskDTO;
 import com.asee.taskmanagementservice.task.service.TaskManagementService;
 import java.util.List;
@@ -7,6 +8,7 @@ import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,9 +34,6 @@ public class TaskManagementController {
     @GetMapping("/{id}")
     public ResponseEntity<TaskDTO> getTaskById(@PathVariable Integer id) {
         var fetchedTask = taskManagementService.getTaskById(id);
-        if (fetchedTask == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(fetchedTask);
     }
 
@@ -42,7 +41,7 @@ public class TaskManagementController {
     public ResponseEntity<List<TaskDTO>> getTasks(@RequestParam(value = "userId", required = false) Integer userId) {
         List<TaskDTO> tasks = taskManagementService.getTasksByUserId(userId);
         if (tasks == null || tasks.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            throw new TaskNotFoundException("No tasks found");
         }
         return ResponseEntity.ok(tasks);
     }
@@ -51,5 +50,11 @@ public class TaskManagementController {
     public ResponseEntity<TaskDTO> updateTask(@PathVariable Integer id, @RequestBody @Valid TaskDTO taskRequest) {
         var updatedTask = taskManagementService.updateTaskById(id, taskRequest);
         return ResponseEntity.ok(updatedTask);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<TaskDTO> deleteTaskById(@PathVariable Integer id) {
+        taskManagementService.deleteTaskById(id);
+        return ResponseEntity.noContent().build();
     }
 }

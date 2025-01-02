@@ -8,4 +8,5 @@ public interface TaskManagementService {
     TaskDTO getTaskById(Integer id);
     List<TaskDTO> getTasksByUserId(Integer userId);
     TaskDTO updateTaskById(Integer id, TaskDTO task);
+    void deleteTaskById(Integer id);
 }

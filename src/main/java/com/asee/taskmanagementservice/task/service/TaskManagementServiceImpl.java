@@ -46,7 +46,7 @@ public class TaskManagementServiceImpl implements TaskManagementService {
             var task = optionalTaskEntity.get();
             return toDTO(task);
         }
-        return null;
+        throw new TaskNotFoundException("Task not found with ID: " + id);
     }
 
     @Override
@@ -90,6 +90,18 @@ public class TaskManagementServiceImpl implements TaskManagementService {
         // Save and map the updated entity
         TaskEntity updatedTask = taskManagementRepository.save(taskEntity);
         return toDTO(updatedTask);
+    }
+
+    @Override
+    public void deleteTaskById(Integer id) {
+        log.info("Delete task with a task id: {}", id);
+
+        if (!taskManagementRepository.existsById(id)) {
+            log.warn("Task with ID {} does not exist.", id);
+            throw new TaskNotFoundException("Task with ID " + id + " not found.");
+        }
+
+        taskManagementRepository.deleteById(id);
     }
 
     private TaskEntity toEntity(TaskDTO taskDTO, UserEntity user) {
